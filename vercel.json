@@ -1,17 +1,11 @@
 {
-  "builds": [
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "rewrites": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "frontend/dist/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
