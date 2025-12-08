@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: cakesman-bakery-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromDatabase:
+          name: cakesman-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://your-vercel-frontend.vercel.app
+
+databases:
+  - name: cakesman-db
+    databaseName: cakesman
+    region: oregon
+    plan: free

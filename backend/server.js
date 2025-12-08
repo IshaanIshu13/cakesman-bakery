@@ -17,13 +17,16 @@ const server = http.createServer(app);
 // Socket.io configuration
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:3000", // Frontend URL
+    origin: process.env.FRONTEND_URL || "http://localhost:3000", // Frontend URL
     methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: true
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true
+}));
 app.use(express.json());
 
 // Store socket instance globally for use in controllers
