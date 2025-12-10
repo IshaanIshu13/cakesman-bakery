@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from "react";
 import io from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:5001";
+const SOCKET_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || "http://localhost:5001";
 
 export const useSocket = (userId, userRole) => {
   const [socket, setSocket] = useState(null);
