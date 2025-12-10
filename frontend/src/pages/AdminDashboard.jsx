@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Package, Plus, Edit, Trash2, Save, X, ShoppingCart, Users, DollarSign, LogOut } from "lucide-react"
 import { CATEGORIES } from "../data/categories"
 import { toast } from "sonner"
-import axios from "axios"
+import axiosInstance from "../utils/axiosInstance"
 import { SocketContext } from "../context/SocketContext"
 import OrderManagement from "../components/OrderManagement"
 import CustomerManagement from "../components/CustomerManagement"
@@ -29,7 +29,7 @@ const AdminDashboard = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get("http://localhost:5001/api/products")
+      const response = await axiosInstance.get("/products")
       setProducts(response.data)
     } catch (error) { 
       toast.error("Failed to fetch products") 
@@ -38,9 +38,7 @@ const AdminDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get("http://localhost:5001/api/orders", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      })
+      const response = await axiosInstance.get("/orders")
       setOrders(response.data)
     } catch (error) { 
       toast.error("Failed to fetch orders") 
@@ -126,15 +124,11 @@ const AdminDashboard = () => {
       }
 
       if (isNewProduct) {
-        const response = await axios.post("http://localhost:5001/api/products", productData, { 
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
-        })
+        const response = await axiosInstance.post("/products", productData)
         setProducts([...products, response.data])
         toast.success("Product added!")
       } else if (selectedProduct) {
-        await axios.patch(`http://localhost:5001/api/products/${selectedProduct._id}`, productData, { 
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
-        })
+        await axiosInstance.patch(`/products/${selectedProduct._id}`, productData)
         setProducts(products.map(p => p._id === selectedProduct._id ? { ...p, ...productData } : p))
         toast.success("Product updated!")
       }
@@ -148,9 +142,7 @@ const AdminDashboard = () => {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm("Delete this product?")) {
       try {
-        await axios.delete(`http://localhost:5001/api/products/${productId}`, { 
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
-        })
+        await axiosInstance.delete(`/products/${productId}`)
         setProducts(products.filter(p => p._id !== productId))
         toast.success("Deleted!")
       } catch (error) { 
@@ -161,9 +153,7 @@ const AdminDashboard = () => {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.patch(`http://localhost:5001/api/orders/${orderId}`, { status: newStatus }, { 
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } 
-      })
+      await axiosInstance.patch(`/orders/${orderId}`, { status: newStatus })
       setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o))
       toast.success("Status updated!")
     } catch (error) { 
