@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react"
-import { Clock, CheckCircle2, Truck, Phone, MessageSquare } from "lucide-react"
+import { Clock, CheckCircle2, Truck, Phone, MessageSquare, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import axios from "axios"
+import { useSocket } from "../context/SocketContext"
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([])
@@ -9,8 +10,9 @@ const OrderManagement = () => {
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const { socket } = useSocket()
 
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("authToken")  // ✅ Fixed: use authToken not token
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
 
   const statusColors = {
@@ -46,6 +48,33 @@ const OrderManagement = () => {
     fetchOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Real-time updates via Socket.io
+  useEffect(() => {
+    if (!socket) return
+
+    // Listen for new orders
+    socket.on("order_created", (newOrder) => {
+      console.log("New order received via Socket.io:", newOrder)
+      setOrders(prevOrders => [newOrder, ...prevOrders])
+      toast.success("New order received!")
+    })
+
+    // Listen for order status updates
+    socket.on("order_status_updated", (updatedOrder) => {
+      console.log("Order status updated via Socket.io:", updatedOrder)
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order._id === updatedOrder._id ? updatedOrder : order
+        )
+      )
+    })
+
+    return () => {
+      socket.off("order_created")
+      socket.off("order_status_updated")
+    }
+  }, [socket])
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
