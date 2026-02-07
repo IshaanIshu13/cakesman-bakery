@@ -44,6 +44,7 @@ const OrderManagement = () => {
 
   useEffect(() => {
     fetchOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleStatusUpdate = async (orderId, newStatus) => {
