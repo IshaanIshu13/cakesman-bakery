@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react"
 import { Clock, CheckCircle2, Truck, Phone, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
-import axios from "axios"
+import axiosInstance from "../utils/axiosInstance"
 import SocketContext from "../context/SocketContext"
 
 const OrderManagement = () => {
@@ -11,9 +11,6 @@ const OrderManagement = () => {
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const { socket } = useContext(SocketContext) || {}
-
-  const token = localStorage.getItem("authToken")  // ✅ Fixed: use authToken not token
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
 
   const statusColors = {
     pending: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Pending", icon: Clock },
@@ -29,9 +26,7 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${API_BASE_URL}/orders/admin/all`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await axiosInstance.get('/orders/admin/all')
       // API returns { success: true, data: [...], count: N }
       const ordersData = response.data.data || response.data || []
       setOrders(Array.isArray(ordersData) ? ordersData : [])
@@ -78,10 +73,9 @@ const OrderManagement = () => {
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      await axios.patch(
-        `${API_BASE_URL}/orders/${orderId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await axiosInstance.patch(
+        `/orders/${orderId}/status`,
+        { status: newStatus }
       )
       
       setOrders(orders.map(o => 
