@@ -28,10 +28,7 @@ const broadcastProductUpdate = (io, event, product) => {
  */
 const broadcastOrderCreated = (io, order) => {
   try {
-    io.to("admin").emit("order_created", {
-      timestamp: new Date(),
-      data: order
-    });
+    io.to("admin").emit("order_created", order);  // Emit order directly, not wrapped
     console.log(`[Socket] Broadcasted order_created to admins:`, order._id);
   } catch (error) {
     console.error("[Socket] Error broadcasting order_created:", error);
@@ -47,15 +44,8 @@ const broadcastOrderCreated = (io, order) => {
 const broadcastOrderStatusUpdate = (io, order, userId) => {
   try {
     // Emit to specific user's room and to all admins
-    io.to(`user_${userId}`).emit("order_status_updated", {
-      timestamp: new Date(),
-      data: order
-    });
-
-    io.to("admin").emit("order_status_updated", {
-      timestamp: new Date(),
-      data: order
-    });
+    io.to(`user_${userId}`).emit("order_status_updated", order);  // Emit order directly
+    io.to("admin").emit("order_status_updated", order);  // Emit order directly
 
     console.log(`[Socket] Broadcasted order_status_updated to user ${userId}:`, order._id);
   } catch (error) {
