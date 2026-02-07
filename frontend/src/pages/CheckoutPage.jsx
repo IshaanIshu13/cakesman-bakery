@@ -90,7 +90,7 @@ export default function CheckoutPage() {
       // Prepare order payload matching backend schema
       const orderPayload = {
         items: cartItems.map(item => ({
-          productId: item.id,
+          productId: item.productId,  // Use productId from cart, not item.id
           name: item.name,
           quantity: item.quantity,
           price: item.price,
