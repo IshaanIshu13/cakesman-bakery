@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { Mail, Phone, MapPin, TrendingUp, Eye, Search } from "lucide-react"
 import { toast } from "sonner"
-import axios from "axios"
+import axiosInstance from "../utils/axiosInstance"
 
 const CustomerManagement = () => {
   const [customers, setCustomers] = useState([])
@@ -12,18 +12,18 @@ const CustomerManagement = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("spent") // spent, orders, name
 
-  const token = localStorage.getItem("token")
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
-
   const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const response = await axios.get(`${API_BASE_URL}/customers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setCustomers(response.data || [])
+      const response = await axiosInstance.get("/customers")
+      const customerData = response.data.data || response.data
+      setCustomers(Array.isArray(customerData) ? customerData : [])
+      console.log("✅ Customers fetched:", customerData?.length || 0)
     } catch (err) {
+      console.error("❌ Failed to load customers:", err.message)
+      console.error("ℹ️ Error details:", err.response?.data)
       toast.error("Failed to load customers")
+      setCustomers([])
     } finally {
       setLoading(false)
     }
@@ -32,12 +32,13 @@ const CustomerManagement = () => {
   const fetchCustomerDetails = async (customerId) => {
     try {
       setDetailsLoading(true)
-      const response = await axios.get(`${API_BASE_URL}/customers/${customerId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setCustomerDetails(response.data)
+      const response = await axiosInstance.get(`/customers/${customerId}`)
+      const details = response.data.data || response.data
+      setCustomerDetails(details)
       setSelectedCustomer(customerId)
+      console.log("✅ Customer details fetched")
     } catch (err) {
+      console.error("❌ Failed to load customer details:", err.message)
       toast.error("Failed to load customer details")
     } finally {
       setDetailsLoading(false)
@@ -52,13 +53,16 @@ const CustomerManagement = () => {
 
     try {
       setLoading(true)
-      const response = await axios.get(
-        `${API_BASE_URL}/customers/search?query=${encodeURIComponent(query)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await axiosInstance.get(
+        `/customers/search?query=${encodeURIComponent(query)}`
       )
-      setCustomers(response.data || [])
+      const customerData = response.data.data || response.data
+      setCustomers(Array.isArray(customerData) ? customerData : [])
+      console.log("✅ Search results:", customerData?.length || 0)
     } catch (err) {
+      console.error("❌ Search failed:", err.message)
       toast.error("Search failed")
+      setCustomers([])
     } finally {
       setLoading(false)
     }

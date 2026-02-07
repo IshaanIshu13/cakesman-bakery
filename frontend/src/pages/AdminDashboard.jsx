@@ -71,29 +71,41 @@ const AdminDashboard = () => {
       const response = await axiosInstance.get("/products")
       const productData = response.data.data || response.data
       setProducts(Array.isArray(productData) ? productData : [])
+      console.log("✅ Products fetched:", productData?.length || 0)
     } catch (error) { 
-      // API failed but user is still authenticated
-      // Use fallback data instead of redirecting
       console.error("❌ Failed to fetch products from API:", error.message)
-      console.error("ℹ️ User is still logged in - using fallback data")
       setProducts(MOCK_PRODUCTS)
-      toast.warning("Using demo data - Database unavailable", {
-        description: "Products are loaded from demo data."
-      })
+      toast.warning("Using demo data - Database unavailable")
     }
   }
 
   const fetchOrders = async () => {
     try {
-      const response = await axiosInstance.get("/orders")
+      // Use admin endpoint to get all orders, not user orders
+      const response = await axiosInstance.get("/orders/admin/all")
       const orderData = response.data.data || response.data
-      setOrders(Array.isArray(orderData) ? orderData : [])
+      const orders = Array.isArray(orderData) ? orderData : []
+      setOrders(orders)
+      console.log("✅ Orders fetched:", orders.length)
     } catch (error) { 
-      // API failed but user is still authenticated
-      // Use empty orders instead of redirecting
       console.error("❌ Failed to fetch orders from API:", error.message)
-      console.error("ℹ️ User is still logged in - using empty orders")
+      console.error("ℹ️ Error details:", error.response?.data)
       setOrders([])
+    }
+  }
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await axiosInstance.get("/customers")
+      const customerData = response.data.data || response.data
+      const customers = Array.isArray(customerData) ? customerData : []
+      // Store customers for stats calculation
+      console.log("✅ Customers fetched:", customers.length)
+      return customers
+    } catch (error) { 
+      console.error("❌ Failed to fetch customers from API:", error.message)
+      console.error("ℹ️ Error details:", error.response?.data)
+      return []
     }
   }
 
@@ -126,9 +138,21 @@ const AdminDashboard = () => {
       return 
     }
     
-    // Only fetch products/orders if user is authenticated admin
-    setLoading(true)
-    Promise.all([fetchProducts(), fetchOrders()]).finally(() => setLoading(false))
+    // Only fetch products/orders/customers if user is authenticated admin
+    const fetchAllData = async () => {
+      setLoading(true)
+      try {
+        await Promise.all([
+          fetchProducts(), 
+          fetchOrders(), 
+          fetchCustomers()
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchAllData()
   }, [authLoading, user, isAdmin, navigate])
 
   // Only update products from socket if data is valid and not partial
