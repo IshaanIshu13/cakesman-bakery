@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react"
-import { Clock, CheckCircle2, Truck, Phone, MessageSquare, RefreshCw } from "lucide-react"
+import React, { useState, useEffect, useContext } from "react"
+import { Clock, CheckCircle2, Truck, Phone, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 import axios from "axios"
-import { useSocket } from "../context/SocketContext"
+import SocketContext from "../context/SocketContext"
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([])
@@ -10,7 +10,7 @@ const OrderManagement = () => {
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
-  const { socket } = useSocket()
+  const { socket } = useContext(SocketContext) || {}
 
   const token = localStorage.getItem("authToken")  // ✅ Fixed: use authToken not token
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
