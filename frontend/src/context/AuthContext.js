@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { api } from '../utils/api'
 
 const AuthContext = createContext()
 
@@ -6,10 +7,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState(null)
+  const [error, setError] = useState(null)
 
-  // Load user from localStorage on component mount
+  // Load user from localStorage and validate session on component mount
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
         const savedToken = localStorage.getItem('authToken')
         const savedUser = localStorage.getItem('user')
@@ -17,12 +19,27 @@ export function AuthProvider({ children }) {
         if (savedToken && savedUser) {
           setToken(savedToken)
           setUser(JSON.parse(savedUser))
+          
+          // Validate token with backend (skip for demo admin token)
+          if (savedToken !== 'admin-token') {
+            try {
+              const data = await api.getMe()
+              const userData = data.user || JSON.parse(savedUser)
+              setUser(userData)
+              localStorage.setItem('user', JSON.stringify(userData))
+            } catch (err) {
+              console.warn('AuthContext: Token validation failed during init')
+              console.warn('ℹ️ Keeping user logged in - they will be redirected on next protected API call if needed')
+              // IMPORTANT: Do NOT clear the user here - let them stay logged in
+              // The auth interceptor will handle actual token expiry
+              // This prevents spurious logouts due to temporary API failures
+            }
+          }
         }
       } catch (error) {
         console.error('AuthContext: Error loading saved data', error)
-        // Clear corrupted data
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('user')
+        // Only clear corrupted data, not valid sessions
+        setError('Failed to restore session')
       } finally {
         setLoading(false)
       }
@@ -33,18 +50,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Login failed')
-      }
-
-      const data = await response.json()
+      const data = await api.login(email, password)
       const { token, user } = data
 
       // Save to localStorage
@@ -64,18 +70,7 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password, phone = '') => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Registration failed')
-      }
-
-      const data = await response.json()
+      const data = await api.register(name, email, password, phone)
       const { token, user } = data
 
       // Save to localStorage
@@ -93,6 +88,32 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const loginAdmin = (adminEmail) => {
+    try {
+      // Create admin user object
+      const adminUser = {
+        _id: 'admin',
+        email: adminEmail,
+        name: 'Administrator',
+        isAdmin: true,
+        role: 'admin'
+      }
+
+      // Save to localStorage
+      localStorage.setItem('authToken', 'admin-token')
+      localStorage.setItem('user', JSON.stringify(adminUser))
+      
+      // Update state
+      setToken('admin-token')
+      setUser(adminUser)
+      
+      return { success: true, user: adminUser }
+    } catch (error) {
+      console.error('AuthContext: Admin login error', error)
+      throw error
+    }
+  }
+
   const logout = () => {
     // Clear localStorage
     localStorage.removeItem('authToken')
@@ -101,16 +122,19 @@ export function AuthProvider({ children }) {
     // Clear state
     setToken(null)
     setUser(null)
+    setError(null)
   }
 
   const value = {
     user,
     token,
     loading,
+    error,
     isAuthenticated: !!user && !!token,
-    isAdmin: user?.isAdmin === true,
+    isAdmin: user?.isAdmin === true || user?.role === 'admin',
     login,
     register,
+    loginAdmin,
     logout
   }
 

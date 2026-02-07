@@ -61,11 +61,15 @@ export const CartProvider = ({ children }) => {
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
+  // Add getCartCount function for direct access
+  const getCartCount = () => cartCount;
+
   return (
     <CartContext.Provider 
       value={{
         cartItems,
         cartCount,
+        getCartCount,
         addToCart,
         removeFromCart,
         updateQuantity,

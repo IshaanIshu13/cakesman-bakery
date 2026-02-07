@@ -25,9 +25,42 @@ export default function Products() {
     setLoading(true);
     try {
       const data = await api.getAllProducts(selectedCategory, selectedSubcategory, searchQuery);
-      setProducts(data && data.length > 0 ? data : SAMPLE_PRODUCTS);
+      
+      // Normalize and filter products
+      let normalizedProducts = Array.isArray(data) ? data : (data?.data ? data.data : []);
+      
+      // Apply strict filters:
+      // - Show only if available === true
+      // - Show only if inStock === true (derived from stock > 0)
+      const visibleProducts = normalizedProducts
+        .map(p => ({
+          ...p,
+          // Ensure price exists
+          price: p.price || p.basePrice || 0,
+          // Derive inStock from stock field if inStock not set
+          inStock: p.inStock !== undefined ? p.inStock : (p.stock > 0),
+          // Ensure available is set
+          available: p.available !== false
+        }))
+        .filter(p => {
+          // MUST be available to show
+          if (!p.available) {
+            console.log(`🚫 Product "${p.name}" hidden: available=${p.available}`);
+            return false;
+          }
+          // MUST be in stock to show
+          if (!p.inStock) {
+            console.log(`🚫 Product "${p.name}" hidden: inStock=${p.inStock}`);
+            return false;
+          }
+          return true;
+        });
+
+      console.log(`✅ Fetched ${normalizedProducts.length} products, showing ${visibleProducts.length}`);
+      setProducts(visibleProducts.length > 0 ? visibleProducts : SAMPLE_PRODUCTS);
     } catch (err) {
-      console.error("Failed to fetch products:", err);
+      console.error("❌ Failed to fetch products:", err);
+      console.log("ℹ️ Using fallback sample products");
       setProducts(SAMPLE_PRODUCTS);
     } finally {
       setLoading(false);

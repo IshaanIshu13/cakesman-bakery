@@ -5,15 +5,14 @@ export default function AddToCartModal({ product, isOpen, onClose, onAdd }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedFlavor, setSelectedFlavor] = useState(product?.flavors?.[0]?.id || '');
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0]?.id || '');
-  const [selectedEgg, setSelectedEgg] = useState(product?.eggOptions?.[0]?.id || '');
 
   if (!isOpen || !product) return null;
 
   const flavor = product.flavors?.find(f => f.id === selectedFlavor) || product.flavors?.[0];
   const size = product.sizes?.find(s => s.id === selectedSize) || product.sizes?.[0];
-  const eggOption = product.eggOptions?.find(e => e.id === selectedEgg) || product.eggOptions?.[0];
 
-  const priceMultiplier = (flavor?.priceMultiplier || 1) * (size?.priceMultiplier || 1) * (eggOption?.priceMultiplier || 1);
+  // All products are eggless - no egg option multiplier
+  const priceMultiplier = (flavor?.priceMultiplier || 1) * (size?.priceMultiplier || 1);
   const itemPrice = product.basePrice * priceMultiplier;
   const totalPrice = itemPrice * quantity;
 
@@ -23,7 +22,6 @@ export default function AddToCartModal({ product, isOpen, onClose, onAdd }) {
       quantity,
       flavor: flavor?.name,
       size: size?.name,
-      eggOption: eggOption?.name,
       price: itemPrice
     });
     setQuantity(1);
@@ -82,28 +80,6 @@ export default function AddToCartModal({ product, isOpen, onClose, onAdd }) {
                   >
                     <div>{s.name.split('(')[0]}</div>
                     <div className="text-xs text-gray-600">{s.servings}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Egg Option Selection */}
-          {product.eggOptions && product.eggOptions.length > 1 && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Egg Option</label>
-              <div className="flex gap-2">
-                {product.eggOptions.map((e) => (
-                  <button
-                    key={e.id}
-                    onClick={() => setSelectedEgg(e.id)}
-                    className={`flex-1 p-2 text-sm rounded border-2 transition ${
-                      selectedEgg === e.id
-                        ? 'border-pink-600 bg-pink-50 text-pink-600 font-semibold'
-                        : 'border-gray-300 hover:border-pink-300'
-                    }`}
-                  >
-                    {e.name}
                   </button>
                 ))}
               </div>

@@ -5,10 +5,24 @@ const { broadcastOrderCreated, broadcastOrderStatusUpdate, notifyAdmin, notifyCu
 // Create order
 exports.createOrder = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated", success: false });
+    }
+
     const { items, totalPrice, shippingAddress, phone, notes } = req.body;
 
     if (!items || items.length === 0) {
-      return res.status(400).json({ message: "Cart is empty" });
+      return res.status(400).json({ 
+        message: "Cart is empty",
+        success: false 
+      });
+    }
+
+    if (!totalPrice || !shippingAddress || !phone) {
+      return res.status(400).json({ 
+        message: "Missing required fields: totalPrice, shippingAddress, phone",
+        success: false 
+      });
     }
 
     const order = new Order({
@@ -30,23 +44,39 @@ exports.createOrder = async (req, res) => {
 
     // Emit socket events
     const io = req.app.get("io");
-    broadcastOrderCreated(io, populatedOrder);
-    notifyAdmin(io, `New order received from ${populatedOrder.userId.name}`, "success", { orderId: populatedOrder._id });
-    notifyCustomer(io, req.user.id, "Your order has been received! Waiting for confirmation.", "success", { orderId: populatedOrder._id });
+    if (io) {
+      broadcastOrderCreated(io, populatedOrder);
+      notifyAdmin(io, `New order received from ${populatedOrder.userId.name}`, "success", { orderId: populatedOrder._id });
+      notifyCustomer(io, req.user.id, "Your order has been received! Waiting for confirmation.", "success", { orderId: populatedOrder._id });
+    }
 
-    res.status(201).json(savedOrder);
+    res.status(201).json({ success: true, message: "Order created successfully", data: savedOrder });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Create order error:", err);
+    res.status(500).json({ 
+      message: "Failed to create order",
+      error: err.message,
+      success: false 
+    });
   }
 };
 
 // Get user orders
 exports.getUserOrders = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User not authenticated", success: false });
+    }
+
     const orders = await Order.find({ userId: req.user.id }).sort({ createdAt: -1 });
-    res.json(orders);
+    res.json({ success: true, data: orders, count: orders.length });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Get user orders error:", err);
+    res.status(500).json({ 
+      message: "Failed to fetch user orders",
+      error: err.message,
+      success: false 
+    });
   }
 };
 
@@ -55,11 +85,19 @@ exports.getOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res.status(404).json({ 
+        message: "Order not found",
+        success: false 
+      });
     }
-    res.json(order);
+    res.json({ success: true, data: order });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Get order error:", err);
+    res.status(500).json({ 
+      message: "Failed to fetch order",
+      error: err.message,
+      success: false 
+    });
   }
 };
 
@@ -67,9 +105,14 @@ exports.getOrder = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().populate("userId", "name email phone").sort({ createdAt: -1 });
-    res.json(orders);
+    res.json({ success: true, data: orders, count: orders.length });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Get all orders error:", err);
+    res.status(500).json({ 
+      message: "Failed to fetch orders",
+      error: err.message,
+      success: false 
+    });
   }
 };
 
@@ -77,7 +120,31 @@ exports.getAllOrders = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const order = await Order.findByIdAndUpdate(req.params.id, { status, updatedAt: new Date() }, { new: true });
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required", success: false });
+    }
+
+    const validStatuses = ["pending", "confirmed", "preparing", "ready", "delivering", "delivered", "cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: `Invalid status. Valid statuses: ${validStatuses.join(", ")}`,
+        success: false 
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id, 
+      { status, updatedAt: new Date() }, 
+      { new: true }
+    ).populate("userId", "name email phone");
+
+    if (!order) {
+      return res.status(404).json({ 
+        message: "Order not found",
+        success: false 
+      });
+    }
     
     if (!order) {
       return res.status(404).json({ message: "Order not found" });

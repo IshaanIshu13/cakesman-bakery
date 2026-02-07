@@ -22,19 +22,18 @@ export const SocketProvider = ({ children }) => {
         const userData = JSON.parse(storedUser);
         setUser(userData);
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        console.error("SocketContext: Error parsing user data", error);
       }
     }
   }, []);
 
-  // Initialize socket connection
-  const { socket, connected, on, off } = useSocket(user?._id, user?.role);
+  // Initialize socket connection with user ID and role
+  const { socket, connected, on, off } = useSocket(user?.id, user?.isAdmin ? 'admin' : 'customer');
 
   /**
    * Handle product created event
    */
   const handleProductCreated = useCallback((data) => {
-    console.log("[Socket] Product created:", data.data);
     setProducts((prev) => [data.data, ...prev]);
   }, []);
 
@@ -42,7 +41,6 @@ export const SocketProvider = ({ children }) => {
    * Handle product updated event
    */
   const handleProductUpdated = useCallback((data) => {
-    console.log("[Socket] Product updated:", data.data);
     setProducts((prev) =>
       prev.map((product) =>
         product._id === data.data._id ? data.data : product
@@ -54,7 +52,6 @@ export const SocketProvider = ({ children }) => {
    * Handle product deleted event
    */
   const handleProductDeleted = useCallback((data) => {
-    console.log("[Socket] Product deleted:", data.data._id);
     setProducts((prev) => prev.filter((product) => product._id !== data.data._id));
   }, []);
 
@@ -62,17 +59,15 @@ export const SocketProvider = ({ children }) => {
    * Handle order created event (for admin)
    */
   const handleOrderCreated = useCallback((data) => {
-    console.log("[Socket] Order created:", data.data);
-    if (user?.role === "admin") {
+    if (user?.isAdmin) {
       setOrders((prev) => [data.data, ...prev]);
     }
-  }, [user?.role]);
+  }, [user?.isAdmin]);
 
   /**
    * Handle order status updated event
    */
   const handleOrderStatusUpdated = useCallback((data) => {
-    console.log("[Socket] Order status updated:", data.data);
     setOrders((prev) =>
       prev.map((order) =>
         order._id === data.data._id ? data.data : order
@@ -84,8 +79,7 @@ export const SocketProvider = ({ children }) => {
    * Handle admin notifications
    */
   const handleAdminNotification = useCallback((data) => {
-    console.log("[Socket] Admin notification:", data);
-    if (user?.role === "admin") {
+    if (user?.isAdmin) {
       const notification = {
         id: Date.now(),
         timestamp: data.timestamp,

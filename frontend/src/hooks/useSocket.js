@@ -24,7 +24,6 @@ export const useSocket = (userId, userRole) => {
 
     // Connection event
     socketInstance.on("connect", () => {
-      console.log("[Socket] Connected to server");
       setConnected(true);
 
       // Register user with their role and ID
@@ -35,13 +34,12 @@ export const useSocket = (userId, userRole) => {
 
     // Disconnection event
     socketInstance.on("disconnect", () => {
-      console.log("[Socket] Disconnected from server");
       setConnected(false);
     });
 
     // Connection error
     socketInstance.on("connect_error", (error) => {
-      console.error("[Socket] Connection error:", error);
+      console.error("useSocket: Connection error", error);
     });
 
     setSocket(socketInstance);

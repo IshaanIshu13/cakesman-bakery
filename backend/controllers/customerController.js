@@ -21,9 +21,14 @@ exports.getAllCustomers = async (req, res) => {
       })
     );
 
-    res.json(enrichedCustomers);
+    res.json({ success: true, data: enrichedCustomers, count: enrichedCustomers.length });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Get all customers error:", err);
+    res.status(500).json({ 
+      message: "Failed to fetch customers",
+      error: err.message,
+      success: false 
+    });
   }
 };
 
@@ -33,7 +38,10 @@ exports.getCustomerDetails = async (req, res) => {
     const customer = await User.findById(req.params.id).select("-password");
     
     if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
+      return res.status(404).json({ 
+        message: "Customer not found",
+        success: false 
+      });
     }
 
     // Get customer's orders

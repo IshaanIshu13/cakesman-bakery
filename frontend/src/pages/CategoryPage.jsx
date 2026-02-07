@@ -29,9 +29,41 @@ export default function CategoryPage() {
       try {
         setLoading(true)
         const response = await api.getAllProducts(currentCategory.name, selectedSubcategory)
-        setFilteredProducts(Array.isArray(response) ? response : response.products || [])
+        
+        // Normalize and filter products
+        let normalizedProducts = Array.isArray(response) ? response : (response?.products || response?.data || [])
+        
+        // Apply strict filters:
+        // - Show only if available === true
+        // - Show only if inStock === true (derived from stock > 0)
+        const visibleProducts = normalizedProducts
+          .map(p => ({
+            ...p,
+            // Ensure price exists
+            price: p.price || p.basePrice || 0,
+            // Derive inStock from stock field if inStock not set
+            inStock: p.inStock !== undefined ? p.inStock : (p.stock > 0),
+            // Ensure available is set
+            available: p.available !== false
+          }))
+          .filter(p => {
+            // MUST be available to show
+            if (!p.available) {
+              console.log(`🚫 Product "${p.name}" hidden: available=${p.available}`);
+              return false;
+            }
+            // MUST be in stock to show
+            if (!p.inStock) {
+              console.log(`🚫 Product "${p.name}" hidden: inStock=${p.inStock}`);
+              return false;
+            }
+            return true;
+          });
+        
+        console.log(`✅ Category "${currentCategory.name}": Fetched ${normalizedProducts.length}, showing ${visibleProducts.length}`);
+        setFilteredProducts(visibleProducts)
       } catch (error) {
-        console.error('Error fetching products:', error)
+        console.error('❌ Error fetching products:', error)
         toast.error('Failed to load products')
         setFilteredProducts([])
       } finally {

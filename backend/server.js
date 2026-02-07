@@ -24,22 +24,41 @@ const io = socketIO(server, {
 });
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: ["http://localhost:3000", "http://localhost:3001", process.env.FRONTEND_URL].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());
+
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const method = req.method;
+  const path = req.path;
+  const hasAuth = !!req.headers.authorization;
+  
+  console.log(`[${timestamp}] 📨 ${method} ${path}${hasAuth ? ' [Auth]' : ''}`);
+  
+  // Log response when sent
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log(`[${timestamp}] ✓ ${method} ${path} → ${res.statusCode}`);
+    originalSend.call(this, data);
+  };
+  
+  next();
+});
 
 // Store socket instance globally for use in controllers
 app.set("io", io);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected successfully"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed:", err.message);
+    console.warn("⚠️  Continuing without database. Some features may not work.");
+  });
 
 // Routes
 app.use("/api/auth", authRoutes);

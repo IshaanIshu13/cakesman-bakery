@@ -3,15 +3,54 @@ import { useNavigate } from "react-router-dom"
 import { Package, Plus, Edit, Trash2, Save, X, ShoppingCart, Users, DollarSign, LogOut } from "lucide-react"
 import { CATEGORIES } from "../data/categories"
 import { toast } from "sonner"
+import { useAuth } from "../context/AuthContext"
 import axiosInstance from "../utils/axiosInstance"
 import { SocketContext } from "../context/SocketContext"
 import OrderManagement from "../components/OrderManagement"
 import CustomerManagement from "../components/CustomerManagement"
 
+// Mock data for fallback when database is unavailable
+const MOCK_PRODUCTS = [
+  {
+    _id: '1',
+    name: 'Chocolate Cake',
+    description: 'Rich and moist chocolate cake',
+    basePrice: 350,
+    image: 'https://via.placeholder.com/64?text=Chocolate+Cake',
+    category: 'Cakes',
+    inStock: true,
+    featured: true,
+    discount: 10
+  },
+  {
+    _id: '2',
+    name: 'Vanilla Cupcake',
+    description: 'Soft vanilla cupcakes with frosting',
+    basePrice: 80,
+    image: 'https://via.placeholder.com/64?text=Vanilla+Cupcake',
+    category: 'Cupcakes',
+    inStock: true,
+    featured: false,
+    discount: 5
+  },
+  {
+    _id: '3',
+    name: 'Strawberry Pastry',
+    description: 'Fresh strawberry pastry',
+    basePrice: 120,
+    image: 'https://via.placeholder.com/64?text=Strawberry+Pastry',
+    category: 'Pastries',
+    inStock: true,
+    featured: true,
+    discount: 0
+  }
+]
+
 const AdminDashboard = () => {
   const navigate = useNavigate()
+  const { user, isAdmin, logout, loading: authLoading } = useAuth()
   const socketContext = useContext(SocketContext)
-  const { socket, products: realtimeProducts, orders: realtimeOrders } = socketContext || {}
+  const { products: realtimeProducts, orders: realtimeOrders } = socketContext || {}
   
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
@@ -24,29 +63,45 @@ const AdminDashboard = () => {
   const [formData, setFormData] = useState({
     name: "", description: "", basePrice: 0, categoryId: CATEGORIES[0]?.id || "", 
     subcategoryId: CATEGORIES[0]?.subcategories[0]?.id || "", image: "", inStock: true,
-    featured: false, discount: 0, deliveryTime: "1-2 hours", tags: []
+    featured: false, discount: 0
   })
 
   const fetchProducts = async () => {
     try {
       const response = await axiosInstance.get("/products")
-      setProducts(response.data)
+      const productData = response.data.data || response.data
+      setProducts(Array.isArray(productData) ? productData : [])
     } catch (error) { 
-      toast.error("Failed to fetch products") 
+      // API failed but user is still authenticated
+      // Use fallback data instead of redirecting
+      console.error("❌ Failed to fetch products from API:", error.message)
+      console.error("ℹ️ User is still logged in - using fallback data")
+      setProducts(MOCK_PRODUCTS)
+      toast.warning("Using demo data - Database unavailable", {
+        description: "Products are loaded from demo data."
+      })
     }
   }
 
   const fetchOrders = async () => {
     try {
       const response = await axiosInstance.get("/orders")
-      setOrders(response.data)
+      const orderData = response.data.data || response.data
+      setOrders(Array.isArray(orderData) ? orderData : [])
     } catch (error) { 
-      toast.error("Failed to fetch orders") 
+      // API failed but user is still authenticated
+      // Use empty orders instead of redirecting
+      console.error("❌ Failed to fetch orders from API:", error.message)
+      console.error("ℹ️ User is still logged in - using empty orders")
+      setOrders([])
     }
   }
 
   useEffect(() => {
-    const uniqueCustomers = new Set(orders.map(o => o.userId)).size
+    // Safely extract userId, handling both direct userId and nested user._id
+    const uniqueCustomers = new Set(
+      orders.map(o => o.userId || (typeof o.user === 'string' ? o.user : o.user?._id)).filter(Boolean)
+    ).size
     const totalRevenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0)
     setStats({ 
       totalProducts: products.length, 
@@ -57,27 +112,41 @@ const AdminDashboard = () => {
   }, [products, orders])
 
   useEffect(() => {
-    if (localStorage.getItem("userRole") !== "admin") { 
-      toast.error("Access denied")
+    // Wait for auth to finish loading before checking authorization
+    if (authLoading) {
+      return // Still loading, don't redirect
+    }
+
+    // Check authentication and admin status ONLY after auth loading is complete
+    if (!user || !isAdmin) { 
+      if (user) {
+        toast.error("Access denied - Admin only")
+      }
       navigate("/login")
       return 
     }
+    
+    // Only fetch products/orders if user is authenticated admin
     setLoading(true)
     Promise.all([fetchProducts(), fetchOrders()]).finally(() => setLoading(false))
-  }, [navigate])
+  }, [authLoading, user, isAdmin, navigate])
 
+  // Only update products from socket if data is valid and not partial
   useEffect(() => { 
-    if (realtimeProducts?.length) setProducts(realtimeProducts) 
+    if (Array.isArray(realtimeProducts) && realtimeProducts.length > 0) {
+      setProducts(realtimeProducts) 
+    }
   }, [realtimeProducts])
   
+  // Only update orders from socket if data is valid and not partial
   useEffect(() => { 
-    if (realtimeOrders?.length) setOrders(realtimeOrders) 
+    if (Array.isArray(realtimeOrders) && realtimeOrders.length > 0) {
+      setOrders(realtimeOrders) 
+    }
   }, [realtimeOrders])
 
   const handleLogout = () => {
-    localStorage.removeItem("userRole")
-    localStorage.removeItem("userEmail")
-    localStorage.removeItem("token")
+    logout()
     toast.success("Logged out")
     navigate("/")
   }
@@ -87,15 +156,30 @@ const AdminDashboard = () => {
     setFormData({ 
       name: "", description: "", basePrice: 0, categoryId: CATEGORIES[0]?.id || "", 
       subcategoryId: CATEGORIES[0]?.subcategories[0]?.id || "", image: "", inStock: true, 
-      featured: false, discount: 0, deliveryTime: "1-2 hours", tags: [] 
+      featured: false, discount: 0
     })
     setIsNewProduct(true)
     setIsProductModalOpen(true)
   }
 
   const handleEdit = (product) => { 
+    // Map category/subcategory names from product back to IDs for form
+    const categoryId = product.categoryId || CATEGORIES.find(c => c.name === product.category)?.id || CATEGORIES[0]?.id || ""
+    const subCat = CATEGORIES.find(c => c.id === categoryId)?.subcategories.find(s => s.name === product.subcategory)
+    const subcategoryId = product.subcategoryId || subCat?.id || CATEGORIES.find(c => c.id === categoryId)?.subcategories[0]?.id || ""
+    
     setSelectedProduct(product)
-    setFormData(product)
+    setFormData({
+      name: product.name,
+      description: product.description,
+      basePrice: product.basePrice,
+      categoryId: categoryId,
+      subcategoryId: subcategoryId,
+      image: product.image,
+      inStock: product.inStock ?? true,
+      featured: product.featured ?? false,
+      discount: product.discount ?? 0
+    })
     setIsNewProduct(false)
     setIsProductModalOpen(true)
   }
@@ -115,49 +199,55 @@ const AdminDashboard = () => {
         description: formData.description,
         category: selectedCat?.name || "",
         subcategory: selectedSubcat?.name || "",
-        basePrice: formData.basePrice,
+        basePrice: Number(formData.basePrice) || 0,
         image: formData.image,
-        featured: formData.featured,
-        flavors: formData.flavors || [],
-        sizes: formData.sizes || [],
-        eggOptions: formData.eggOptions || []
+        featured: Boolean(formData.featured),
+        inStock: Boolean(formData.inStock),
+        discount: Number(formData.discount) || 0
       }
 
       if (isNewProduct) {
         const response = await axiosInstance.post("/products", productData)
-        setProducts([...products, response.data])
-        toast.success("Product added!")
+        const newProduct = response.data.data || response.data
+        setProducts([...products, newProduct])
+        toast.success(response.data.message || "Product added successfully!")
       } else if (selectedProduct) {
-        await axiosInstance.patch(`/products/${selectedProduct._id}`, productData)
-        setProducts(products.map(p => p._id === selectedProduct._id ? { ...p, ...productData } : p))
-        toast.success("Product updated!")
+        const response = await axiosInstance.patch(`/products/${selectedProduct._id}`, productData)
+        const updatedProduct = response.data.data || response.data
+        setProducts(products.map(p => p._id === selectedProduct._id ? updatedProduct : p))
+        toast.success(response.data.message || "Product updated successfully!")
       }
       setIsProductModalOpen(false)
+      setSelectedProduct(null)
     } catch (error) { 
-      console.error("Error:", error.response?.data || error.message)
-      toast.error(error.response?.data?.message || "Failed to save product") 
+      const errorMsg = error.response?.data?.message || error.message || "Failed to save product"
+      console.error("❌ Save product error:", errorMsg)
+      toast.error(errorMsg) 
     }
   }
 
   const handleDeleteProduct = async (productId) => {
     if (window.confirm("Delete this product?")) {
       try {
-        await axiosInstance.delete(`/products/${productId}`)
+        const response = await axiosInstance.delete(`/products/${productId}`)
         setProducts(products.filter(p => p._id !== productId))
-        toast.success("Deleted!")
+        toast.success(response.data.message || "Deleted!")
       } catch (error) { 
-        toast.error("Failed to delete") 
+        console.error("❌ Delete error:", error)
+        toast.error(error.response?.data?.message || "Failed to delete") 
       }
     }
   }
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axiosInstance.patch(`/orders/${orderId}`, { status: newStatus })
-      setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o))
-      toast.success("Status updated!")
+      const response = await axiosInstance.patch(`/orders/${orderId}`, { status: newStatus })
+      const updatedOrder = response.data.data || response.data
+      setOrders(orders.map(o => o._id === orderId ? updatedOrder : o))
+      toast.success(response.data.message || "Status updated!")
     } catch (error) { 
-      toast.error("Failed to update") 
+      console.error("❌ Update order error:", error)
+      toast.error(error.response?.data?.message || "Failed to update") 
     }
   }
 
@@ -169,7 +259,7 @@ const AdminDashboard = () => {
     { label: "Revenue", value: `₹${stats.totalRevenue.toLocaleString("en-IN")}`, icon: DollarSign, color: "bg-pink-500" }
   ]
 
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div><p className="mt-4 text-gray-600">Loading...</p></div></div>
+  if (loading || authLoading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div><p className="mt-4 text-gray-600">Loading...</p></div></div>
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -198,7 +288,7 @@ const AdminDashboard = () => {
             <button onClick={handleAddNew} className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg flex items-center space-x-2"><Plus className="w-4 h-4" /><span>Add</span></button></div>
             <div className="overflow-x-auto">{products.length === 0 ? <div className="p-12 text-center"><p className="text-gray-500">No products</p></div> : 
               <table className="w-full"><thead className="bg-gray-50 border-b"><tr><th className="px-6 py-3 text-left text-xs font-medium">Image</th><th className="px-6 py-3 text-left text-xs font-medium">Name</th><th className="px-6 py-3 text-left text-xs font-medium">Price</th><th className="px-6 py-3 text-left text-xs font-medium">Discount</th><th className="px-6 py-3 text-left text-xs font-medium">Status</th><th className="px-6 py-3 text-left text-xs font-medium">Actions</th></tr></thead>
-                <tbody>{products.map(p => <tr key={p._id} className="border-b hover:bg-gray-50"><td className="px-6 py-4"><img src={p.image} alt={p.name} className="w-12 h-12 object-cover rounded" onError={(e) => e.target.src = "https://via.placeholder.com/64"} /></td>
+                <tbody>{products.map(p => <tr key={p._id} className="border-b hover:bg-gray-50"><td className="px-6 py-4"><img src={p.image} alt={p.name} className="w-12 h-12 object-cover rounded" onError={(e) => { if (e.target.src !== "https://via.placeholder.com/64") e.target.src = "https://via.placeholder.com/64" }} /></td>
                   <td className="px-6 py-4"><p className="text-sm font-medium">{p.name}</p></td><td className="px-6 py-4 text-sm">₹{p.basePrice}</td>
                   <td className="px-6 py-4"><span className={p.discount ? "px-2 py-1 bg-green-100 text-green-800 text-xs rounded" : "text-gray-400 text-xs"}>{p.discount ? `${p.discount}%` : "-"}</span></td>
                   <td className="px-6 py-4"><span className={`px-2 py-1 text-xs rounded ${p.inStock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{p.inStock ? "In" : "Out"}</span></td>
@@ -228,7 +318,7 @@ const AdminDashboard = () => {
             <div><label className="block text-sm font-semibold mb-2">Name</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" /></div>
             <div><label className="block text-sm font-semibold mb-2">Description</label><textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" /></div>
             <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-semibold mb-2">Category</label><select value={formData.categoryId} onChange={(e) => { const newCatId = e.target.value; const newSubcatId = CATEGORIES.find(c => c.id === newCatId)?.subcategories[0]?.id; setFormData({...formData, categoryId: newCatId, subcategoryId: newSubcatId}) }} className="w-full px-4 py-2 border rounded-lg">{CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-              <div><label className="block text-sm font-semibold mb-2">Subcategory</label><select value={formData.subcategoryId} onChange={(e) => setFormData({...formData, subcategoryId: e.target.value})} className="w-full px-4 py-2 border rounded-lg">{selectedCategory?.subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div></div>
+              <div><label className="block text-sm font-semibold mb-2">Subcategory</label><select value={formData.subcategoryId} onChange={(e) => setFormData({...formData, subcategoryId: e.target.value})} className="w-full px-4 py-2 border rounded-lg">{selectedCategory && selectedCategory.subcategories ? selectedCategory.subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>) : null}</select></div></div>
             <div className="grid grid-cols-2 gap-4"><div><label className="block text-sm font-semibold mb-2">Price</label><input type="number" value={formData.basePrice} onChange={(e) => setFormData({...formData, basePrice: Number(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div>
               <div><label className="block text-sm font-semibold mb-2">Discount %</label><input type="number" value={formData.discount || 0} onChange={(e) => setFormData({...formData, discount: Number(e.target.value)})} className="w-full px-4 py-2 border rounded-lg" /></div></div>
             <div><label className="block text-sm font-semibold mb-2">Image URL</label><input type="text" value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} className="w-full px-4 py-2 border rounded-lg" /></div>

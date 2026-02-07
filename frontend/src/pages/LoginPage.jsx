@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { api } from '../utils/api'
+import { useAuth } from '../context/AuthContext'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { loginAdmin } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -62,12 +64,18 @@ export default function LoginPage() {
     try {
       // Admin credentials check (demo)
       if (adminEmail === 'admin@cakesman.com' && adminPassword === 'admin123') {
-        localStorage.setItem('userRole', 'admin')
-        localStorage.setItem('userEmail', adminEmail)
+        // Use AuthContext to set admin user globally
+        loginAdmin(adminEmail)
+        
+        // Show success toast
         toast.success('Admin access granted!', {
           description: 'Redirecting to admin dashboard...'
         })
-        setTimeout(() => navigate('/admin'), 1000)
+        
+        // Navigate after a brief delay to ensure auth state is updated
+        setTimeout(() => {
+          navigate('/admin')
+        }, 800)
       } else {
         toast.error('Admin login failed', {
           description: 'Invalid admin credentials.'
@@ -89,6 +97,7 @@ export default function LoginPage() {
     if (!validateForm()) return
     
     setLoading(true)
+    setErrors({})
     try {
       let response
       
@@ -101,16 +110,33 @@ export default function LoginPage() {
       if (response.token) {
         localStorage.setItem('userRole', 'customer')
         localStorage.setItem('userEmail', email)
-        toast.success(isSignUp ? 'Account created successfully!' : 'Logged in successfully!')
+        toast.success(isSignUp ? 'Account created successfully!' : 'Logged in successfully!', {
+          description: 'Redirecting to home...'
+        })
+        // Use small delay to ensure auth state is updated
         setTimeout(() => navigate('/'), 1000)
       } else if (response.error) {
         toast.error(response.error)
         setErrors({ submit: response.error })
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.error || error.message || 'An error occurred'
+      let errorMsg = 'An error occurred during authentication'
+      
+      if (error.response?.status === 401) {
+        errorMsg = 'Invalid email or password'
+      } else if (error.response?.status === 409) {
+        errorMsg = 'Email already exists. Please try logging in.'
+      } else if (error.response?.data?.error) {
+        errorMsg = error.response.data.error
+      } else if (error.response?.data?.message) {
+        errorMsg = error.response.data.message
+      } else if (error.message) {
+        errorMsg = error.message
+      }
+      
       toast.error(errorMsg)
       setErrors({ submit: errorMsg })
+      console.error('Login error:', error)
     } finally {
       setLoading(false)
     }
@@ -119,7 +145,15 @@ export default function LoginPage() {
   const handleSubmit = loginType === 'admin' ? handleAdminLogin : handleCustomerLogin
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-yellow-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-yellow-50 flex items-center justify-center py-12 px-4 relative">
+      <button 
+        onClick={() => navigate('/')}
+        className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-white rounded-lg transition duration-200"
+        title="Go back to home"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span>Go Back</span>
+      </button>
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         {/* Header */}
         <div className="text-center py-8 px-4 bg-gradient-to-r from-pink-50 to-yellow-50">

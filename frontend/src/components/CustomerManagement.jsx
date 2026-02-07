@@ -13,11 +13,12 @@ const CustomerManagement = () => {
   const [sortBy, setSortBy] = useState("spent") // spent, orders, name
 
   const token = localStorage.getItem("token")
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
 
   const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const response = await axios.get("http://localhost:5001/api/customers", {
+      const response = await axios.get(`${API_BASE_URL}/customers`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setCustomers(response.data || [])
@@ -31,7 +32,7 @@ const CustomerManagement = () => {
   const fetchCustomerDetails = async (customerId) => {
     try {
       setDetailsLoading(true)
-      const response = await axios.get(`http://localhost:5001/api/customers/${customerId}`, {
+      const response = await axios.get(`${API_BASE_URL}/customers/${customerId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setCustomerDetails(response.data)
@@ -52,7 +53,7 @@ const CustomerManagement = () => {
     try {
       setLoading(true)
       const response = await axios.get(
-        `http://localhost:5001/api/customers/search?query=${encodeURIComponent(query)}`,
+        `${API_BASE_URL}/customers/search?query=${encodeURIComponent(query)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setCustomers(response.data || [])

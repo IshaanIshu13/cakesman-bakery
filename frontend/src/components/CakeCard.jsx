@@ -5,7 +5,20 @@ import { ShoppingCart } from 'lucide-react';
 const CakeCard = ({ cake }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Normalize product data for safe rendering
+  const normalizedCake = {
+    ...cake,
+    price: cake.price || cake.basePrice || 0,
+    inStock: cake.inStock !== undefined ? cake.inStock : (cake.stock > 0),
+    available: cake.available !== false
+  };
+
   const handleAddToCart = (customizedCake) => {
+    // Verify product is still available
+    if (!normalizedCake.available || !normalizedCake.inStock) {
+      return;
+    }
+
     // Get existing cart items from localStorage
     const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
     
@@ -26,27 +39,32 @@ const CakeCard = ({ cake }) => {
     <div className="group bg-white rounded-xl shadow-md overflow-hidden transition-all hover:shadow-xl">
       <div className="relative overflow-hidden">
         <img 
-          src={cake.image} 
-          alt={cake.name}
+          src={normalizedCake.image} 
+          alt={normalizedCake.name}
           className="w-full h-48 object-cover transform transition-transform group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-black bg-opacity-20 transition-opacity opacity-0 group-hover:opacity-100"></div>
       </div>
       
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">{cake.name}</h3>
-        <p className="text-gray-600 text-sm mb-3 h-12 overflow-hidden">{cake.description}</p>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">{normalizedCake.name}</h3>
+        <p className="text-gray-600 text-sm mb-3 h-12 overflow-hidden">{normalizedCake.description}</p>
         <div className="flex justify-between items-center">
           <div>
             <span className="text-sm text-gray-500">Starting from</span>
-            <span className="block text-lg font-bold text-pink-600">₹{cake.price}</span>
+            <span className="block text-lg font-bold text-pink-600">₹{normalizedCake.price}</span>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-pink-500 text-white px-4 py-2 rounded-full text-sm hover:bg-pink-600 transition-colors"
+            disabled={!normalizedCake.available || !normalizedCake.inStock}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-colors ${
+              normalizedCake.available && normalizedCake.inStock
+                ? 'bg-pink-500 text-white hover:bg-pink-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <ShoppingCart size={18} />
-            <span>Add to Cart</span>
+            <span>{normalizedCake.inStock ? 'Add to Cart' : 'Out of Stock'}</span>
           </button>
         </div>
       </div>

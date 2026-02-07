@@ -11,6 +11,7 @@ const OrderManagement = () => {
   const [searchTerm, setSearchTerm] = useState("")
 
   const token = localStorage.getItem("token")
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
 
   const statusColors = {
     pending: { bg: "bg-yellow-100", text: "text-yellow-800", label: "Pending", icon: Clock },
@@ -26,7 +27,7 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const response = await axios.get("http://localhost:5001/api/orders/admin/all", {
+      const response = await axios.get(`${API_BASE_URL}/orders/admin/all`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setOrders(response.data || [])
@@ -44,7 +45,7 @@ const OrderManagement = () => {
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       await axios.patch(
-        `http://localhost:5001/api/orders/${orderId}/status`,
+        `${API_BASE_URL}/orders/${orderId}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       )

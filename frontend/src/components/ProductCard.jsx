@@ -8,36 +8,50 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
+  // Normalize product data for safe rendering
+  const normalizedProduct = {
+    ...product,
+    price: product.price || product.basePrice || 0,
+    inStock: product.inStock !== undefined ? product.inStock : (product.stock > 0),
+    available: product.available !== false
+  };
+
   const handleAddClick = () => {
-    const cartId = `${product._id || product.id}-${Date.now()}-${Math.random()}`;
+    // Only allow adding if product is available and in stock
+    if (!normalizedProduct.available || !normalizedProduct.inStock) {
+      toast.error("This product is currently unavailable");
+      return;
+    }
+
+    const cartId = `${normalizedProduct._id || normalizedProduct.id}-${Date.now()}-${Math.random()}`;
     addToCart({
       cartId,
-      productId: product._id || product.id,
-      name: product.name,
-      price: product.basePrice,
-      image: product.image,
+      productId: normalizedProduct._id || normalizedProduct.id,
+      name: normalizedProduct.name,
+      price: normalizedProduct.price,
+      image: normalizedProduct.image,
       quantity: 1
     });
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${normalizedProduct.name} added to cart!`);
   };
 
   const handleViewProduct = () => {
-    navigate(`/product/${product._id || product.id}`);
+    navigate(`/product/${normalizedProduct._id || normalizedProduct.id}`);
   };
   return (
     <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden">
       {/* Image */}
       <div className="relative h-48 bg-gradient-to-br from-pink-100 to-pink-50 flex items-center justify-center overflow-hidden group">
-        {product.image ? (
+        {normalizedProduct.image ? (
           <img 
-            src={product.image} 
-            alt={product.name}
+            src={normalizedProduct.image} 
+            alt={normalizedProduct.name}
             className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
           />
         ) : (
           <span className="text-6xl">🎂</span>
         )}
-        {product.featured && (
+        {normalizedProduct.featured && (
           <div className="absolute top-3 right-3 bg-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
             Featured
           </div>
@@ -48,32 +62,32 @@ export default function ProductCard({ product }) {
       <div className="p-4">
         {/* Name */}
         <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">
-          {product.name}
+          {normalizedProduct.name}
         </h3>
 
         {/* Category */}
         <p className="text-xs text-gray-500 mb-2 capitalize">
-          {product.category} • {product.subcategory}
+          {normalizedProduct.category} • {normalizedProduct.subcategory}
         </p>
 
         {/* Description */}
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {product.description}
+          {normalizedProduct.description}
         </p>
 
         {/* Rating */}
-        {product.rating && (
+        {normalizedProduct.rating && (
           <div className="flex items-center gap-1 mb-3">
             <div className="flex text-yellow-400">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
                   size={14}
-                  className={i < Math.round(product.rating) ? 'fill-current' : ''}
+                  className={i < Math.round(normalizedProduct.rating) ? 'fill-current' : ''}
                 />
               ))}
             </div>
-            <span className="text-xs text-gray-600">({product.rating})</span>
+            <span className="text-xs text-gray-600">({normalizedProduct.rating})</span>
           </div>
         )}
 
@@ -82,15 +96,20 @@ export default function ProductCard({ product }) {
           <div>
             <p className="text-xs text-gray-500">From</p>
             <p className="text-2xl font-bold text-pink-600">
-              ₹{product.basePrice}
+              ₹{normalizedProduct.price}
             </p>
           </div>
           <button
             onClick={handleAddClick}
-            className="px-4 py-2 bg-pink-600 text-white rounded-full font-semibold hover:bg-pink-700 transition text-sm flex items-center gap-2"
+            disabled={!normalizedProduct.available || !normalizedProduct.inStock}
+            className={`px-4 py-2 rounded-full font-semibold transition text-sm flex items-center gap-2 ${
+              normalizedProduct.available && normalizedProduct.inStock
+                ? 'bg-pink-600 text-white hover:bg-pink-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <ShoppingCart size={16} />
-            Add
+            {normalizedProduct.inStock ? 'Add' : 'Out of Stock'}
           </button>
         </div>
       </div>
