@@ -30,9 +30,13 @@ const OrderManagement = () => {
       const response = await axios.get(`${API_BASE_URL}/orders/admin/all`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setOrders(response.data || [])
+      // API returns { success: true, data: [...], count: N }
+      const ordersData = response.data.data || response.data || []
+      setOrders(Array.isArray(ordersData) ? ordersData : [])
     } catch (err) {
+      console.error("Failed to load orders:", err)
       toast.error("Failed to load orders")
+      setOrders([])
     } finally {
       setLoading(false)
     }

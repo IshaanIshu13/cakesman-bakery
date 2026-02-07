@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Clock, Truck, Shield } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { api } from '../utils/api'
 import { toast } from 'sonner'
 
 export default function CheckoutPage() {
@@ -86,21 +88,52 @@ export default function CheckoutPage() {
     setIsProcessing(true)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Prepare order payload matching backend schema
+      const orderPayload = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          flavor: item.flavor || '',
+          size: item.size || '',
+          eggOption: item.eggOption || '',
+          subtotal: item.price * item.quantity
+        })),
+        totalPrice: total,
+        shippingAddress: `${formData.address}, ${formData.city}, ${formData.pincode}`,
+        phone: formData.phone,
+        notes: formData.specialInstructions || ''
+      }
 
-      toast.success('Order placed successfully! 🎉', {
-        description: `Order ID: #ORD${Date.now().toString().slice(-6)}`
-      })
+      // Call actual backend API
+      const response = await api.createOrder(
+        orderPayload.items,
+        orderPayload.totalPrice,
+        orderPayload.shippingAddress,
+        orderPayload.phone,
+        orderPayload.notes
+      )
 
-      // Clear cart and redirect
-      clearCart()
-      setTimeout(() => {
-        navigate('/')
-      }, 1500)
+      if (response.success) {
+        toast.success('Order placed successfully! 🎉', {
+          description: `Order ID: ${response.data._id.slice(-6).toUpperCase()}`
+        })
+
+        // Clear cart and redirect
+        clearCart()
+        setTimeout(() => {
+          navigate('/')
+        }, 1500)
+      } else {
+        toast.error('Order failed', {
+          description: response.message || 'Could not create order'
+        })
+      }
     } catch (error) {
+      console.error("Order creation error:", error)
       toast.error('Failed to place order', {
-        description: error.message
+        description: error.message || 'An error occurred while placing your order'
       })
     } finally {
       setIsProcessing(false)

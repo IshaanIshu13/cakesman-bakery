@@ -125,7 +125,8 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Status is required", success: false });
     }
 
-    const validStatuses = ["pending", "confirmed", "preparing", "ready", "delivering", "delivered", "cancelled"];
+    // Must match Order schema enum: ["pending", "accepted", "baking", "out_for_delivery", "completed", "cancelled"]
+    const validStatuses = ["pending", "accepted", "baking", "out_for_delivery", "completed", "cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ 
         message: `Invalid status. Valid statuses: ${validStatuses.join(", ")}`,
@@ -145,18 +146,21 @@ exports.updateOrderStatus = async (req, res) => {
         success: false 
       });
     }
-    
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
 
     // Emit socket events
     const io = req.app.get("io");
-    broadcastOrderStatusUpdate(io, order, order.userId.toString());
-    notifyCustomer(io, order.userId.toString(), `Order status updated to: ${status}`, "info", { orderId: order._id, status });
+    if (io) {
+      broadcastOrderStatusUpdate(io, order, order.userId.toString());
+      notifyCustomer(io, order.userId.toString(), `Order status updated to: ${status}`, "info", { orderId: order._id, status });
+    }
 
-    res.json(order);
+    res.json({ success: true, data: order, message: "Order status updated successfully" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("❌ Update order status error:", err);
+    res.status(500).json({ 
+      message: "Failed to update order status",
+      error: err.message,
+      success: false 
+    });
   }
 };
