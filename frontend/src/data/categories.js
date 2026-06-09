@@ -1,108 +1,78 @@
+// New Navigation Structure for Bakery Website
 export const CATEGORIES = [
   {
-    id: "cakes",
-    name: "Cakes",
+    id: "flavor-station",
+    name: "Flavor Station",
     emoji: "🎂",
-    description: "Delicious cakes for every occasion",
+    description: "Classic flavored cakes",
     subcategories: [
       { id: "chocolate-cakes", name: "Chocolate Cakes" },
-      { id: "vanilla-cakes", name: "Vanilla Cakes" },
       { id: "fruit-cakes", name: "Fruit Cakes" },
-      { id: "red-velvet", name: "Red Velvet" },
-      { id: "cheesecakes", name: "Cheesecakes" },
-      { id: "black-forest", name: "Black Forest" }
+      { id: "special-cakes", name: "Special Cakes" },
+      { id: "classic-flavours", name: "Classic Flavours" }
     ]
   },
   {
-    id: "cupcakes",
-    name: "Cupcakes",
-    emoji: "🧁",
-    description: "Individual sized sweet treats",
+    id: "kids-themed",
+    name: "Kids & Themed Collections",
+    emoji: "🎈",
+    description: "Fun cakes for kids and themed celebrations",
     subcategories: [
-      { id: "chocolate-cupcakes", name: "Chocolate Cupcakes" },
-      { id: "vanilla-cupcakes", name: "Vanilla Cupcakes" },
-      { id: "red-velvet-cupcakes", name: "Red Velvet Cupcakes" },
-      { id: "strawberry-cupcakes", name: "Strawberry Cupcakes" },
-      { id: "carrot-cupcakes", name: "Carrot Cupcakes" },
-      { id: "lemon-cupcakes", name: "Lemon Cupcakes" }
+      { id: "boy-squad", name: "Boy Squad" },
+      { id: "girl-power", name: "Girl Power" },
+      { id: "office-party", name: "Office Party" },
+      { id: "love-anniversaries", name: "Love & Anniversaries" },
+      { id: "theme-parks", name: "Theme Parks (Jungle / Ocean)" }
     ]
   },
   {
-    id: "pastries",
-    name: "Pastries",
-    emoji: "🥐",
-    description: "Fresh and flaky pastry delights",
+    id: "family-friends",
+    name: "Just For Family & Friends",
+    emoji: "❤️",
+    description: "Special cakes for loved ones",
     subcategories: [
-      { id: "croissants", name: "Croissants" },
-      { id: "danishes", name: "Danish Pastries" },
-      { id: "eclairs", name: "Éclairs" },
-      { id: "macarons", name: "Macarons" },
-      { id: "puff-pastries", name: "Puff Pastries" },
-      { id: "tarts", name: "Fruit Tarts" },
-      { id: "donuts", name: "Donuts" }
+      { id: "viral-meme-cakes", name: "Viral & Meme Cakes" },
+      { id: "mom-dad", name: "Mom & Dad" },
+      { id: "hubby-wifey", name: "Hubby & Wifey" }
     ]
   },
   {
-    id: "breads",
-    name: "Breads",
-    emoji: "🍞",
-    description: "Freshly baked artisan breads",
+    id: "lets-party",
+    name: "Let's Party (Occasions)",
+    emoji: "🎉",
+    description: "Celebrate every special moment",
     subcategories: [
-      { id: "sourdough", name: "Sourdough" },
-      { id: "whole-wheat", name: "Whole Wheat" },
-      { id: "ciabatta", name: "Ciabatta" },
-      { id: "focaccia", name: "Focaccia" },
-      { id: "baguettes", name: "Baguettes" },
-      { id: "rye-bread", name: "Rye Bread" },
-      { id: "multigrain", name: "Multigrain" }
+      { id: "bachelor-bash", name: "Bachelor Bash" },
+      { id: "she-said-yes", name: "She Said Yes (Engagement)" },
+      { id: "happy-retirement", name: "Happy Retirement" },
+      { id: "well-miss-you", name: "We'll Miss You (Farewell)" },
+      { id: "baby-on-board", name: "Baby on Board (Shower)" },
+      { id: "big-wins", name: "Big Wins (Congratulations)" }
     ]
   },
   {
-    id: "cookies",
-    name: "Cookies",
-    emoji: "🍪",
-    description: "Homemade cookies and biscuits",
-    subcategories: [
-      { id: "chocolate-chip", name: "Chocolate Chip" },
-      { id: "sugar-cookies", name: "Sugar Cookies" },
-      { id: "oatmeal-cookies", name: "Oatmeal Cookies" },
-      { id: "peanut-butter", name: "Peanut Butter" },
-      { id: "shortbread", name: "Shortbread" },
-      { id: "macaroons", name: "Macaroons" },
-      { id: "ginger-snaps", name: "Ginger Snaps" }
-    ]
-  },
-  {
-    id: "specialty",
-    name: "Specialty",
+    id: "custom-cake",
+    name: "Create Your Own",
     emoji: "✨",
-    description: "Special occasion and custom cakes",
-    subcategories: [
-      { id: "wedding-cakes", name: "Wedding Cakes" },
-      { id: "birthday-cakes", name: "Birthday Cakes" },
-      { id: "anniversary-cakes", name: "Anniversary Cakes" },
-      { id: "custom-cakes", name: "Custom Cakes" },
-      { id: "themed-cakes", name: "Themed Cakes" },
-      { id: "tiered-cakes", name: "Tiered Cakes" }
-    ]
-  },
-  {
-    id: "desserts",
-    name: "Desserts",
-    emoji: "🍰",
-    description: "Sweet treats and miniatures",
-    subcategories: [
-      { id: "brownies", name: "Brownies" },
-      { id: "mousse-cakes", name: "Mousse Cakes" },
-      { id: "tiramisu", name: "Tiramisu" },
-      { id: "dessert-bars", name: "Dessert Bars" },
-      { id: "petit-fours", name: "Petit Fours" },
-      { id: "fudge", name: "Fudge" },
-      { id: "truffles", name: "Chocolate Truffles" }
-    ]
+    description: "Design your dream cake",
+    isAction: true,
+    subcategories: []
   }
 ];
 
+// Helper function to get category by id
+export const getCategoryById = (id) => {
+  return CATEGORIES.find(cat => cat.id === id);
+};
+
+// Helper function to get subcategory by parent id and subcategory id
+export const getSubcategoryById = (categoryId, subcategoryId) => {
+  const category = getCategoryById(categoryId);
+  if (!category) return null;
+  return category.subcategories.find(sub => sub.id === subcategoryId);
+};
+
+// Flavor options for customization
 export const FLAVORS = [
   { id: "vanilla", name: "Vanilla", priceMultiplier: 1 },
   { id: "chocolate", name: "Chocolate", priceMultiplier: 1.1 },
@@ -116,6 +86,7 @@ export const FLAVORS = [
   { id: "red-velvet", name: "Red Velvet", priceMultiplier: 1.2 }
 ];
 
+// Size options for cakes
 export const SIZES = [
   { id: "small", name: "Small (4 inch)", servings: "2-4 servings", priceMultiplier: 1 },
   { id: "medium", name: "Medium (6 inch)", servings: "4-6 servings", priceMultiplier: 1.5 },
@@ -126,52 +97,84 @@ export const SIZES = [
   { id: "sheet", name: "Sheet Cake (12x18)", servings: "24-30 servings", priceMultiplier: 5 }
 ];
 
+// Egg options for dietary preferences
 export const EGG_OPTIONS = [
   { id: "regular", name: "Regular (Contains Eggs)", priceMultiplier: 1 },
   { id: "eggfree", name: "Egg-Free", priceMultiplier: 1.1 }
 ];
 
+// Sample products for display
 export const SAMPLE_PRODUCTS = [
   {
     id: "1",
     name: "Classic Chocolate Cake",
     category: "cakes",
     subcategory: "chocolate-cakes",
-    basePrice: 35,
-    image: "/images/placeholder.jpg",
+    basePrice: 399,
+    image: "🍫",
     description: "Rich and moist chocolate cake with chocolate frosting",
     flavors: FLAVORS,
     sizes: SIZES,
     eggOptions: EGG_OPTIONS,
     rating: 4.8,
-    featured: true
+    reviews: 234,
+    discount: 10,
+    featured: true,
+    deliveryTime: "Same Day",
+    tags: ["Chocolate", "Eggless Available"]
   },
   {
     id: "2",
     name: "Vanilla Dream Cake",
     category: "cakes",
     subcategory: "vanilla-cakes",
-    basePrice: 30,
-    image: "/images/placeholder.jpg",
-    description: "Fluffy vanilla cake with vanilla buttercream",
+    basePrice: 349,
+    image: "🍰",
+    description: "Fluffy vanilla cake with vanilla buttercream and fruit toppings",
     flavors: FLAVORS,
     sizes: SIZES,
     eggOptions: EGG_OPTIONS,
     rating: 4.6,
-    featured: true
+    reviews: 189,
+    discount: 5,
+    featured: true,
+    deliveryTime: "Same Day",
+    tags: ["Vanilla", "Popular"]
   },
   {
     id: "3",
-    name: "Assorted Cupcakes",
-    category: "cupcakes",
-    subcategory: "chocolate-cupcakes",
-    basePrice: 20,
-    image: "/images/placeholder.jpg",
-    description: "Box of 6 assorted gourmet cupcakes",
+    name: "Strawberry Delight Cake",
+    category: "cakes",
+    subcategory: "fruit-cakes",
+    basePrice: 449,
+    image: "🍓",
+    description: "Fresh strawberry cake with whipped cream and real strawberries",
     flavors: FLAVORS,
-    sizes: [{ id: "6pack", name: "6-Pack", servings: "6", priceMultiplier: 1 }],
+    sizes: SIZES,
     eggOptions: EGG_OPTIONS,
     rating: 4.7,
-    featured: true
+    reviews: 156,
+    discount: 15,
+    featured: true,
+    deliveryTime: "Same Day",
+    tags: ["Strawberry", "Fresh Fruits"]
+  },
+  {
+    id: "4",
+    name: "Caramel Fusion Cake",
+    category: "cakes",
+    subcategory: "special-cakes",
+    basePrice: 499,
+    image: "🎂",
+    description: "Decadent caramel cake with salted caramel frosting and crunch",
+    flavors: FLAVORS,
+    sizes: SIZES,
+    eggOptions: EGG_OPTIONS,
+    rating: 4.9,
+    reviews: 267,
+    discount: 12,
+    featured: true,
+    deliveryTime: "Same Day",
+    tags: ["Caramel", "Premium"]
   }
 ];

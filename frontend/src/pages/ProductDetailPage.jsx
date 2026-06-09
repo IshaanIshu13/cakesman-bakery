@@ -67,12 +67,17 @@ export default function ProductDetailPage() {
     setLoading(true)
     try {
       addToCart({
+        // Generate unique cartId for this cart item instance
+        cartId: `${product._id || product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         productId: product._id || product.id,
+        name: product.name,
         quantity,
         flavor: flavor?.name,
         size: size?.name,
         eggOption: eggOption?.name,
-        price: itemPrice
+        price: itemPrice,
+        // Include product image for cart display
+        image: product.image
       })
       toast.success('Product added to cart! 🎉')
       setQuantity(1)

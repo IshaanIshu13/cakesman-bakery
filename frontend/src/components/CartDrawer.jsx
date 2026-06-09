@@ -1,20 +1,36 @@
-﻿import React from 'react'
+﻿import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Trash2, ShoppingBag } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { toast } from 'sonner'
+import AddOnsModal from './AddOnsModal'
+import { calculateItemPrice, calculateCartTotal, formatPrice } from '../utils/priceCalculator'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const navigate = useNavigate()
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart()
+  const { cartItems, removeFromCart, updateQuantity } = useCart()
+  const [showAddOnsModal, setShowAddOnsModal] = useState(false)
+
+  // Calculate totals dynamically using price calculator
+  const totals = useMemo(() => {
+    return calculateCartTotal(cartItems)
+  }, [cartItems])
+
+  const { subtotal, tax, total: cartTotal } = totals
+  const deliveryFee = subtotal > 500 ? 0 : 50
+  const finalTotal = cartTotal + deliveryFee
 
   const handleCheckout = () => {
+    // Show add-ons modal before checkout
+    setShowAddOnsModal(true)
+  }
+
+  const handleAddOnsConfirm = () => {
+    // Close modal and drawer, then navigate to checkout
+    setShowAddOnsModal(false)
     onClose()
     navigate('/checkout')
   }
-
-  const deliveryFee = cartTotal > 500 ? 0 : 50
-  const finalTotal = cartTotal + deliveryFee
 
   return (
     <>
@@ -72,7 +88,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                       {item.size && `${item.size} • `}
                       {item.eggOption}
                     </p>
-                    <p className="text-sm font-semibold text-pink-600 mt-1">₹{item.price}</p>
+                    <p className="text-sm font-semibold text-pink-600 mt-1">{formatPrice(calculateItemPrice(item))}</p>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
                     <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
@@ -109,7 +125,11 @@ export default function CartDrawer({ isOpen, onClose }) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-semibold text-amber-900">₹{cartTotal}</span>
+                  <span className="font-semibold text-amber-900">{formatPrice(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tax (GST 18%):</span>
+                  <span className="font-semibold text-amber-900">{formatPrice(tax)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Delivery Fee:</span>
@@ -117,11 +137,11 @@ export default function CartDrawer({ isOpen, onClose }) {
                     {deliveryFee === 0 ? (
                       <span className="text-green-600">FREE</span>
                     ) : (
-                      `₹${deliveryFee}`
+                      formatPrice(deliveryFee)
                     )}
                   </span>
                 </div>
-                {cartTotal <= 500 && deliveryFee > 0 && (
+                {subtotal <= 500 && deliveryFee > 0 && (
                   <p className="text-xs text-gray-500 pt-2 border-t border-gray-300">
                     Free delivery on orders above ₹500
                   </p>
@@ -131,7 +151,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               <div className="bg-gradient-to-r from-pink-50 to-amber-50 border border-pink-200 rounded-lg p-3">
                 <p className="flex justify-between items-center">
                   <span className="font-semibold text-amber-900">Total:</span>
-                  <span className="text-xl font-bold text-pink-600">₹{finalTotal}</span>
+                  <span className="text-xl font-bold text-pink-600">{formatPrice(finalTotal)}</span>
                 </p>
               </div>
 
@@ -152,6 +172,13 @@ export default function CartDrawer({ isOpen, onClose }) {
           </>
         )}
       </div>
+
+      {/* Add-ons Modal */}
+      <AddOnsModal
+        isOpen={showAddOnsModal}
+        onClose={() => setShowAddOnsModal(false)}
+        onConfirm={handleAddOnsConfirm}
+      />
     </>
   )
 }

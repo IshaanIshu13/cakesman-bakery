@@ -3,7 +3,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  Plus, Minus, Trash2, AlertCircle, 
+  Trash2, AlertCircle, 
   ShoppingBag, Truck, Store, Calendar, 
   Clock, ArrowRight, CheckCircle2 
 } from "lucide-react";
@@ -198,10 +198,25 @@ function Cart() {
                     {/* Product Image */}
                     <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
                       {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-pink-100 text-2xl">🍰</div>
-                      )}
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Hide failed image and show fallback
+                            e.target.style.display = 'none';
+                            const fallback = e.target.parentElement.querySelector('[data-fallback="true"]');
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        data-fallback="true"
+                        className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-100 to-pink-50 text-3xl"
+                        style={{ display: item.image ? 'none' : 'flex' }}
+                      >
+                        🍰
+                      </div>
                     </div>
 
                     {/* Content */}
@@ -219,17 +234,25 @@ function Cart() {
                       <div className="flex justify-between items-end mt-4">
                         <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
                           <button 
-                            onClick={() => updateQuantity(item.cartId, Math.max(1, (item.quantity || 1) - 1))}
-                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded-md transition text-gray-600"
+                            onClick={() => {
+                              const currentQty = item.quantity || 1;
+                              updateQuantity(item.cartId, Math.max(1, currentQty - 1));
+                            }}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded-md transition text-gray-600 font-bold"
                           >
-                            <Minus size={14} />
+                            −
                           </button>
-                          <span className="text-sm font-semibold min-w-[1.5rem] text-center">{item.quantity}</span>
+                          <span className="text-sm font-semibold min-w-[1.5rem] text-center">
+                            {item.quantity || 1}
+                          </span>
                           <button 
-                            onClick={() => updateQuantity(item.cartId, (item.quantity || 1) + 1)}
-                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded-md transition text-gray-600"
+                            onClick={() => {
+                              const currentQty = item.quantity || 1;
+                              updateQuantity(item.cartId, currentQty + 1);
+                            }}
+                            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded-md transition text-gray-600 font-bold"
                           >
-                            <Plus size={14} />
+                            +
                           </button>
                         </div>
                         

@@ -1,11 +1,13 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Settings, Search, X } from "lucide-react";
+import { ShoppingCart, User, LogOut, Settings, Search, X, ChevronDown } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { SocketContext } from "../context/SocketContext";
 import LoginModal from "./LoginModal";
+import CustomCakeModal from "./CustomCakeModal";
 import { api } from "../utils/api";
+import { CATEGORIES, SAMPLE_PRODUCTS } from "../data/categories";
 
 // Search Bar Component with Dropdown
 const SearchBar = () => {
@@ -19,8 +21,8 @@ const SearchBar = () => {
   const [isLoading, setIsLoading] = useState(false);
   const searchRef = useRef(null);
 
-  // Combine categories from menuItems
-  const categories = ["Cakes", "Cupcakes", "Pastries", "Breads", "Cookies", "Specialty", "Desserts"];
+  // Extract category names from CATEGORIES
+  const categoryNames = CATEGORIES.filter(cat => !cat.isAction).map(cat => cat.name);
 
   // Handle search input change
   useEffect(() => {
@@ -31,53 +33,67 @@ const SearchBar = () => {
     }
 
     // Perform search
-    const performSearch = async () => {
+    const performSearch = () => {
       setIsLoading(true);
       try {
-        // Use realtime products first, fallback to API
-        let productsToSearch = realtimeProducts;
-        
-        // If no realtime products, fetch from API
-        if (!Array.isArray(productsToSearch) || productsToSearch.length === 0) {
-          try {
-            const response = await api.getAllProducts("", "", searchQuery);
-            productsToSearch = response.data || response || [];
-          } catch (error) {
-            console.error("Error fetching products:", error);
-            productsToSearch = [];
-          }
-        }
+        // Get product data - with fallback
+        const productsToSearch = (Array.isArray(SAMPLE_PRODUCTS) && SAMPLE_PRODUCTS.length > 0) 
+          ? SAMPLE_PRODUCTS 
+          : [
+              {
+                id: "1",
+                name: "Classic Chocolate Cake",
+                category: "cakes",
+                basePrice: 399,
+                image: "🍫",
+                description: "Rich and moist chocolate cake with chocolate frosting"
+              },
+              {
+                id: "2",
+                name: "Vanilla Dream Cake",
+                category: "cakes",
+                basePrice: 349,
+                image: "🍰",
+                description: "Fluffy vanilla cake with vanilla buttercream"
+              },
+              {
+                id: "3",
+                name: "Strawberry Delight Cake",
+                category: "cakes",
+                basePrice: 449,
+                image: "🍓",
+                description: "Fresh strawberry cake with whipped cream"
+              },
+              {
+                id: "4",
+                name: "Caramel Fusion Cake",
+                category: "cakes",
+                basePrice: 499,
+                image: "🎂",
+                description: "Decadent caramel cake with salted caramel frosting"
+              }
+            ];
 
         // Filter products based on search query (case-insensitive, partial match)
         const query = searchQuery.toLowerCase();
         
-        const productMatches = (Array.isArray(productsToSearch) ? productsToSearch : [])
+        const productMatches = productsToSearch
           .filter(p => {
-            const normalized = {
-              ...p,
-              price: p.price || p.basePrice || 0,
-              inStock: p.inStock !== undefined ? p.inStock : (p.stock > 0),
-              available: p.available !== false
-            };
+            if (!p || !p.name) return false;
             return (
-              normalized.available &&
-              normalized.inStock &&
-              (normalized.name?.toLowerCase().includes(query) ||
-                normalized.description?.toLowerCase().includes(query) ||
-                normalized.category?.toLowerCase().includes(query))
+              p.name.toLowerCase().includes(query) ||
+              (p.description && p.description.toLowerCase().includes(query)) ||
+              (p.category && p.category.toLowerCase().includes(query))
             );
           })
           .slice(0, 3) // Limit to 3 products
           .map(p => ({
             ...p,
-            price: p.price || p.basePrice || 0,
-            inStock: p.inStock !== undefined ? p.inStock : (p.stock > 0),
-            available: p.available !== false,
             type: "product"
           }));
 
         // Find category matches
-        const categoryMatches = categories
+        const categoryMatches = categoryNames
           .filter(cat => cat.toLowerCase().includes(query))
           .slice(0, 4 - productMatches.length) // Fill remaining slots
           .map(cat => ({
@@ -94,9 +110,8 @@ const SearchBar = () => {
       }
     };
 
-    const debounceTimer = setTimeout(performSearch, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery, realtimeProducts]);
+    performSearch();
+  }, [searchQuery]);
 
   // Handle click outside
   useEffect(() => {
@@ -113,9 +128,10 @@ const SearchBar = () => {
   // Handle result click
   const handleResultClick = (result) => {
     if (result.type === "product") {
-      navigate(`/product/${result._id}`);
+      navigate(`/product/${result.id || result._id}`);
     } else {
-      navigate(`/category/${result.name.toLowerCase()}`);
+      const categoryId = CATEGORIES.find(cat => cat.name === result.name)?.id || result.name.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/category/${categoryId}`);
     }
     setSearchQuery("");
     setSearchResults([]);
@@ -138,7 +154,6 @@ const SearchBar = () => {
           placeholder="Search for cakes, desserts..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => searchQuery && setIsDropdownOpen(true)}
           className="w-[350px] pl-10 pr-10 py-2 border border-gray-300 rounded-full outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-200 transition-all"
         />
         {searchQuery && (
@@ -168,18 +183,13 @@ const SearchBar = () => {
                       onClick={() => handleResultClick(result)}
                       className="w-full px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-pink-50 transition-colors text-left flex items-center gap-3"
                     >
-                      <img
-                        src={result.image}
-                        alt={result.name}
-                        className="w-12 h-12 object-cover rounded"
-                        onError={(e) => {
-                          e.target.src = "https://via.placeholder.com/48?text=Cake";
-                        }}
-                      />
+                      <div className="w-12 h-12 rounded flex items-center justify-center bg-pink-100 text-2xl">
+                        {result.image}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate">{result.name}</p>
                         <p className="text-sm text-gray-600">{result.category}</p>
-                        <p className="text-sm font-semibold text-pink-600">₹{result.price}</p>
+                        <p className="text-sm font-semibold text-pink-600">₹{result.basePrice}</p>
                       </div>
                     </button>
                   ) : (
@@ -229,27 +239,34 @@ const CartLink = () => {
 
 function Navbar() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isCustomCakeModalOpen, setIsCustomCakeModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [hoveredCategory, setHoveredCategory] = useState(null);
   const navigate = useNavigate();
   
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
 
-  const menuItems = [
-    "Cakes",
-    "Cupcakes",
-    "Pastries",
-    "Breads",
-    "Cookies",
-    "Specialty",
-    "Desserts"
-  ];
+  // Handle category click
+  const handleCategoryClick = (categoryId) => {
+    const category = CATEGORIES.find(cat => cat.id === categoryId);
+    
+    if (category?.isAction) {
+      // Show modal for Custom Cake
+      setIsCustomCakeModalOpen(true);
+    } else {
+      // Navigate to category page
+      navigate(`/category/${categoryId}`);
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 font-sans fixed top-0 left-0 right-0 z-50">
       {/* Top Section */}
       <div className="flex items-center justify-between px-10 py-3">
-        <Link to="/" className="text-xl font-bold text-gray-700 hover:text-pink-600 transition-colors">
-          🧁 Cakes Man Bakery
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <img src="/cakesman-logo.svg" alt="Cakesman Bakery" className="h-16 w-16" />
+          <span className="text-xl font-bold text-amber-900 hidden sm:inline">Cakes Man Bakery</span>
         </Link>
 
         {/* Search */}
@@ -336,18 +353,58 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Bottom Menu */}
-      <div className="flex justify-center gap-8 py-3 bg-white">
-        {menuItems.map((item, index) => (
-          <Link
-            key={index}
-            to={`/category/${item.toLowerCase()}`}
-            className="px-2 py-1 text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+      {/* Bottom Menu - Dynamic Categories with Dropdown */}
+      <div className="flex justify-center items-center gap-2 py-3 bg-white border-t border-gray-100">
+        {CATEGORIES.map((category) => (
+          <div
+            key={category.id}
+            className="relative group"
+            onMouseEnter={() => !category.isAction && setHoveredCategory(category.id)}
+            onMouseLeave={() => setHoveredCategory(null)}
           >
-            {item}
-          </Link>
+            <button
+              onClick={() => handleCategoryClick(category.id)}
+              className={`px-4 py-2 font-medium text-sm rounded-lg transition-all flex items-center gap-1 ${
+                category.isAction
+                  ? 'bg-rose-600 text-white hover:bg-rose-700'
+                  : 'text-gray-700 hover:text-pink-600 hover:bg-pink-50'
+              }`}
+            >
+              <span>{category.emoji}</span>
+              <span>{category.name}</span>
+              {!category.isAction && category.subcategories.length > 0 && (
+                <ChevronDown size={16} className="transition-transform group-hover:rotate-180" />
+              )}
+            </button>
+
+            {/* Dropdown Menu for Subcategories */}
+            {!category.isAction && category.subcategories.length > 0 && (
+              <div
+                className={`absolute left-0 mt-0 w-56 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden transition-all duration-200 ${
+                  hoveredCategory === category.id
+                    ? 'opacity-100 visible translate-y-0'
+                    : 'opacity-0 invisible translate-y-2'
+                } group-hover:opacity-100 group-hover:visible group-hover:translate-y-0`}
+              >
+                <div className="p-2 space-y-1">
+                  {category.subcategories.map((subcategory) => (
+                    <Link
+                      key={subcategory.id}
+                      to={`/products?category=${category.id}&subcategory=${subcategory.id}`}
+                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-pink-600 rounded transition-colors text-sm"
+                    >
+                      {subcategory.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ))}
       </div>
+
+      {/* Custom Cake Modal */}
+      <CustomCakeModal isOpen={isCustomCakeModalOpen} onClose={() => setIsCustomCakeModalOpen(false)} />
     </nav>
   );
 }

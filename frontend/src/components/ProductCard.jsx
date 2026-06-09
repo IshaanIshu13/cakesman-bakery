@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import AddToCartModal from './AddToCartModal';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Normalize product data for safe rendering
   const normalizedProduct = {
@@ -23,61 +25,59 @@ export default function ProductCard({ product }) {
       return;
     }
 
-    const cartId = `${normalizedProduct._id || normalizedProduct.id}-${Date.now()}-${Math.random()}`;
-    addToCart({
-      cartId,
-      productId: normalizedProduct._id || normalizedProduct.id,
-      name: normalizedProduct.name,
-      price: normalizedProduct.price,
-      image: normalizedProduct.image,
-      quantity: 1
-    });
-    toast.success(`${normalizedProduct.name} added to cart!`);
+    // Open modal to let user select size (MANDATORY)
+    setIsModalOpen(true);
+  };
+
+  const handleAddFromModal = (item) => {
+    addToCart(item);
+    toast.success(`${item.name} added to cart!`);
   };
 
   const handleViewProduct = () => {
     navigate(`/product/${normalizedProduct._id || normalizedProduct.id}`);
   };
   return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden">
-      {/* Image */}
-      <div className="relative h-48 bg-gradient-to-br from-pink-100 to-pink-50 flex items-center justify-center overflow-hidden group">
-        {normalizedProduct.image ? (
-          <img 
-            src={normalizedProduct.image} 
-            alt={normalizedProduct.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-          />
-        ) : (
-          <span className="text-6xl">🎂</span>
-        )}
-        {normalizedProduct.featured && (
-          <div className="absolute top-3 right-3 bg-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-            Featured
-          </div>
-        )}
-      </div>
+    <>
+      <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden">
+        {/* Image */}
+        <div className="relative h-48 bg-gradient-to-br from-pink-100 to-pink-50 flex items-center justify-center overflow-hidden group">
+          {normalizedProduct.image ? (
+            <img 
+              src={normalizedProduct.image} 
+              alt={normalizedProduct.name}
+              className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+            />
+          ) : (
+            <span className="text-6xl">🎂</span>
+          )}
+          {normalizedProduct.featured && (
+            <div className="absolute top-3 right-3 bg-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+              Featured
+            </div>
+          )}
+        </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {/* Name */}
-        <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">
-          {normalizedProduct.name}
-        </h3>
+        {/* Content */}
+        <div className="p-4">
+          {/* Name */}
+          <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">
+            {normalizedProduct.name}
+          </h3>
 
-        {/* Category */}
-        <p className="text-xs text-gray-500 mb-2 capitalize">
-          {normalizedProduct.category} • {normalizedProduct.subcategory}
-        </p>
+          {/* Category */}
+          <p className="text-xs text-gray-500 mb-2 capitalize">
+            {normalizedProduct.category} • {normalizedProduct.subcategory}
+          </p>
 
-        {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-          {normalizedProduct.description}
-        </p>
+          {/* Description */}
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {normalizedProduct.description}
+          </p>
 
-        {/* Rating */}
-        {normalizedProduct.rating && (
-          <div className="flex items-center gap-1 mb-3">
+          {/* Rating */}
+          {normalizedProduct.rating && (
+            <div className="flex items-center gap-1 mb-3">
             <div className="flex text-yellow-400">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -114,5 +114,18 @@ export default function ProductCard({ product }) {
         </div>
       </div>
     </div>
+
+    {/* Modal for size selection - MANDATORY before add to cart */}
+    <AddToCartModal
+      product={{
+        ...normalizedProduct,
+        _id: normalizedProduct._id || normalizedProduct.id,
+        flavors: [{ id: '1', name: 'Classic', priceMultiplier: 1 }],
+      }}
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onAdd={handleAddFromModal}
+    />
+    </>
   );
 }

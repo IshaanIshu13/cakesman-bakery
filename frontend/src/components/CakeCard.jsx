@@ -22,10 +22,13 @@ const CakeCard = ({ cake }) => {
     // Get existing cart items from localStorage
     const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
     
-    // Add new item with unique ID
+    // Add new item with unique ID (timestamp + random to ensure uniqueness)
     const newItem = {
       ...customizedCake,
-      cartId: Date.now()
+      // Ensure cartId is unique - timestamp + random string
+      cartId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // Ensure quantity defaults to 1
+      quantity: customizedCake.quantity || 1
     };
     
     // Save updated cart

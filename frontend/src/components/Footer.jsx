@@ -10,9 +10,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-3xl"></span>
-              <h3 className="font-bold text-lg text-amber-900">Cakes Man Bakery</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <img src="/cakesman-logo.svg" alt="Cakesman Bakery" className="h-20 w-20" />
+              <div>
+                <h3 className="font-bold text-lg text-amber-900">Cakes Man</h3>
+                <p className="text-sm text-amber-700">Bakery</p>
+              </div>
             </div>
             <p className="text-gray-700 text-sm mb-4 leading-relaxed">
               Freshly baked cakes and desserts made with love. Customized designs for every celebration. Same-day delivery available in your city.
@@ -111,7 +114,7 @@ export default function Footer() {
               height="100%"
               frameBorder="0"
               title="Cakesman Bakery Location Map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1669.0833715876322!2d82.96482280516095!3d25.27710916484316!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398e3246b9f46e17%3A0x633fc89231c5bf8d!2sCAKESMAN%20BAKERY!5e0!3m2!1sen!2sin!4v1764770265139!5m2!1sen!2sin"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7010.011045526538!2d82.96630938051547!3d25.280341676283893!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398e3246b9f46e17%3A0x633fc89231c5bf8d!2sCAKESMAN%20BAKERY!5e0!3m2!1sen!2sin!4v1770519605991!5m2!1sen!2sin"
               allowFullScreen=""
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

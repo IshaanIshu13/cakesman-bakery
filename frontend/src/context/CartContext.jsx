@@ -29,28 +29,36 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (item) => {
     const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const newCart = [...existingCart, item];
+    // Ensure quantity defaults to 1 if not provided
+    const itemToAdd = {
+      ...item,
+      quantity: item.quantity || 1
+    };
+    const newCart = [...existingCart, itemToAdd];
     localStorage.setItem('cart', JSON.stringify(newCart));
     setCartItems(newCart);
-    setCartCount(newCart.reduce((total, item) => total + (item.quantity || 1), 0));
+    setCartCount(newCart.reduce((total, cartItem) => total + (cartItem.quantity || 1), 0));
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const removeFromCart = (cartId) => {
+    // Remove item by unique cartId (each item gets a unique ID when added)
     const newCart = cartItems.filter(item => item.cartId !== cartId);
     localStorage.setItem('cart', JSON.stringify(newCart));
     setCartItems(newCart);
-    setCartCount(newCart.reduce((total, item) => total + (item.quantity || 1), 0));
+    setCartCount(newCart.reduce((total, cartItem) => total + (cartItem.quantity || 1), 0));
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
   const updateQuantity = (cartId, newQuantity) => {
+    // Ensure newQuantity is at least 1
+    const validQuantity = Math.max(1, parseInt(newQuantity) || 1);
     const newCart = cartItems.map(item =>
-      item.cartId === cartId ? { ...item, quantity: newQuantity } : item
+      item.cartId === cartId ? { ...item, quantity: validQuantity } : item
     );
     localStorage.setItem('cart', JSON.stringify(newCart));
     setCartItems(newCart);
-    setCartCount(newCart.reduce((total, item) => total + (item.quantity || 1), 0));
+    setCartCount(newCart.reduce((total, cartItem) => total + (cartItem.quantity || 1), 0));
     window.dispatchEvent(new Event('cartUpdated'));
   };
 

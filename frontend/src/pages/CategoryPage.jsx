@@ -28,7 +28,7 @@ export default function CategoryPage() {
     const fetchProducts = async () => {
       try {
         setLoading(true)
-        const response = await api.getAllProducts(currentCategory.name, selectedSubcategory)
+        const response = await api.getAllProducts(categoryId, selectedSubcategory)
         
         // Normalize and filter products
         let normalizedProducts = Array.isArray(response) ? response : (response?.products || response?.data || [])
@@ -176,7 +176,7 @@ export default function CategoryPage() {
                         : 'bg-transparent text-gray-700 hover:bg-pink-50'
                     }`}
                   >
-                    <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center">
                       <div>
                         <div className="text-sm">{subcategory.name}</div>
                         {subcategory.description && (
@@ -186,7 +186,7 @@ export default function CategoryPage() {
                         )}
                       </div>
                       <span className="text-xs bg-pink-200 text-pink-700 px-2 py-1 rounded-full ml-2">
-                        -
+                        {filteredProducts.filter(p => p.subcategory === subcategory.id).length}
                       </span>
                     </div>
                   </button>

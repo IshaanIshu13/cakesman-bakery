@@ -9,7 +9,7 @@ exports.createOrder = async (req, res) => {
       return res.status(401).json({ message: "User not authenticated", success: false });
     }
 
-    const { items, totalPrice, shippingAddress, phone, notes } = req.body;
+    const { items, totalPrice, deliveryType, timeSlot, shippingAddress, phone, notes } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ 
@@ -18,6 +18,12 @@ exports.createOrder = async (req, res) => {
       });
     }
 
+    // Calculate subtotal for each item if not provided
+    const itemsWithSubtotal = items.map(item => ({
+      ...item,
+      subtotal: item.subtotal || (item.price * (item.quantity || 1))
+    }));
+
     if (!totalPrice || !shippingAddress || !phone) {
       return res.status(400).json({ 
         message: "Missing required fields: totalPrice, shippingAddress, phone",
@@ -25,10 +31,26 @@ exports.createOrder = async (req, res) => {
       });
     }
 
+    if (!deliveryType || !["home_delivery", "takeaway"].includes(deliveryType)) {
+      return res.status(400).json({ 
+        message: "Invalid or missing delivery type",
+        success: false 
+      });
+    }
+
+    if (!timeSlot || !["10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00", "20:00-22:00"].includes(timeSlot)) {
+      return res.status(400).json({ 
+        message: "Invalid or missing time slot",
+        success: false 
+      });
+    }
+
     const order = new Order({
       userId: req.user.id,
-      items,
+      items: itemsWithSubtotal,
       totalPrice,
+      deliveryType,
+      timeSlot,
       shippingAddress,
       phone,
       notes

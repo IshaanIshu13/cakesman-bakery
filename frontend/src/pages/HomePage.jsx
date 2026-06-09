@@ -35,17 +35,11 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
-                onClick={() => navigate('/category/cakes')}
+                onClick={() => navigate('/category/flavor-station')}
                 className="px-8 py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-pink-700 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={20} />
-                Order Now
-              </button>
-              <button 
-                onClick={() => navigate('/category/cakes')}
-                className="px-8 py-4 border-2 border-pink-300 text-pink-700 rounded-full font-semibold hover:bg-pink-50 transition-all duration-300"
-              >
-                View Menu
+                Explore Menu
               </button>
             </div>
 
@@ -65,21 +59,25 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Column - Hero Image */}
+          {/* Right Column - Video */}
           <div className="relative">
-            <div className="relative h-96 lg:h-full rounded-2xl overflow-hidden bg-gradient-to-br from-pink-100 to-pink-50 shadow-2xl flex items-center justify-center">
-              <div className="text-9xl animate-bounce">🎂</div>
+            <div className="relative h-64 lg:h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-pink-100 to-pink-50 shadow-2xl flex items-center justify-center">
+              {/* Video Element */}
+              <video 
+                className="w-full h-full object-cover"
+                autoPlay 
+                muted 
+                loop
+                controls
+              >
+                <source src="/videos/cakes-showcase.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
               
               {/* Rating Badge */}
-              <div className="absolute top-6 right-6 bg-white rounded-full px-4 py-2 shadow-lg flex items-center gap-2">
+              <div className="absolute top-6 right-6 bg-white rounded-full px-4 py-2 shadow-lg flex items-center gap-2 z-10">
                 <Star size={16} className="fill-yellow-400 text-yellow-400" />
                 <span className="font-semibold text-amber-900">4.9/5</span>
-              </div>
-
-              {/* Price Badge */}
-              <div className="absolute bottom-6 left-6 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full px-6 py-3 text-white shadow-lg">
-                <p className="text-xs opacity-80">Starting from</p>
-                <p className="text-2xl font-bold">₹299</p>
               </div>
 
               {/* Decorative Circles */}
@@ -152,7 +150,8 @@ export default function HomePage() {
     </div>
   )
 
-  // ============ BESTSELLERS SECTION ============
+  // ============ BESTSELLERS SECTION not working right now ============
+
   const BestsellersSection = () => (
     <div className="bg-white py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -148,11 +148,13 @@ export const api = {
   },
 
   // Order endpoints
-  createOrder: async (items, totalPrice, shippingAddress, phone, notes) => {
+  createOrder: async (items, totalPrice, shippingAddress, phone, notes, deliveryType = 'home_delivery', timeSlot = '') => {
     try {
       const response = await axiosInstance.post("/orders", {
         items,
         totalPrice,
+        deliveryType,
+        timeSlot,
         shippingAddress,
         phone,
         notes
